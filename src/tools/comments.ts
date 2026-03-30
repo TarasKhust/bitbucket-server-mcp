@@ -1,6 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getClient } from '../client.js'
-import { PullRequestSchema, AddCommentSchema, AddInlineCommentSchema } from '../types.js'
+import { PullRequestSchema, AddCommentSchema, AddInlineCommentSchema, DeleteCommentSchema } from '../types.js'
 
 export function registerCommentTools(server: McpServer) {
   server.tool(
@@ -35,6 +35,33 @@ export function registerCommentTools(server: McpServer) {
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(activities || [], null, 2) }],
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.errors?.[0]?.message || error.message
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }] }
+      }
+    }
+  )
+
+  server.tool(
+    'delete_comment',
+    'Delete a comment from a pull request',
+    DeleteCommentSchema.shape,
+    async ({ projectKey, repoSlug, prId, commentId, version }) => {
+      try {
+        const client = getClient()
+        await client.delete(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments/${commentId}`,
+          { params: { version: version ?? -1 } }
+        )
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Comment #${commentId} deleted from PR #${prId}`,
+            },
+          ],
         }
       } catch (error: any) {
         const msg = error.response?.data?.errors?.[0]?.message || error.message

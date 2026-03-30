@@ -12,7 +12,7 @@ export const RepoSchema = z.object({
 export const PullRequestSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
-  prId: z.number().describe('Pull request ID'),
+  prId: z.coerce.number().describe('Pull request ID'),
 })
 
 export const CreatePullRequestSchema = z.object({
@@ -31,17 +31,25 @@ export const CreatePullRequestSchema = z.object({
 export const AddCommentSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
-  prId: z.number().describe('Pull request ID'),
+  prId: z.coerce.number().describe('Pull request ID'),
   text: z.string().describe('Comment text (supports markdown)'),
+})
+
+export const DeleteCommentSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  commentId: z.coerce.number().describe('Comment ID to delete'),
+  version: z.coerce.number().optional().describe('Comment version for concurrency check. Defaults to -1'),
 })
 
 export const AddInlineCommentSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
-  prId: z.number().describe('Pull request ID'),
+  prId: z.coerce.number().describe('Pull request ID'),
   text: z.string().describe('Comment text'),
   filePath: z.string().describe('Path to the file to comment on'),
-  line: z.number().describe('Line number to comment on'),
+  line: z.coerce.number().describe('Line number to comment on'),
   lineType: z
     .enum(['ADDED', 'REMOVED', 'CONTEXT'])
     .optional()
@@ -55,17 +63,17 @@ export const ListPullRequestsSchema = z.object({
     .enum(['OPEN', 'MERGED', 'DECLINED', 'ALL'])
     .optional()
     .describe('Filter by PR state. Defaults to OPEN'),
-  limit: z.number().optional().describe('Max results to return. Defaults to 25'),
+  limit: z.coerce.number().optional().describe('Max results to return. Defaults to 25'),
 })
 
 export const ListSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
-  limit: z.number().optional().describe('Max results to return. Defaults to 25'),
+  limit: z.coerce.number().optional().describe('Max results to return. Defaults to 25'),
 })
 
 export const BranchesSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
   filterText: z.string().optional().describe('Filter branches by name'),
-  limit: z.number().optional().describe('Max results to return. Defaults to 25'),
+  limit: z.coerce.number().optional().describe('Max results to return. Defaults to 25'),
 })
