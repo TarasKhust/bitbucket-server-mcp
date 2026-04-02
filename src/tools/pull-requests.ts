@@ -4,6 +4,7 @@ import {
   ListPullRequestsSchema,
   PullRequestSchema,
   CreatePullRequestSchema,
+  UpdateReviewersSchema,
 } from '../types.js'
 
 function formatPR(pr: any) {
@@ -146,6 +147,44 @@ export function registerPullRequestTools(server: McpServer) {
             {
               type: 'text' as const,
               text: `Pull request #${data.id} created: ${data.links?.self?.[0]?.href || data.title}`,
+            },
+          ],
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.errors?.[0]?.message || error.message
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }] }
+      }
+    }
+  )
+
+  server.tool(
+    'update_pull_request_reviewers',
+    'Add or replace reviewers on a pull request',
+    UpdateReviewersSchema.shape,
+    async ({ projectKey, repoSlug, prId, reviewers }) => {
+      try {
+        const client = getClient()
+        const prResp = await client.get(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}`
+        )
+        const pr = prResp.data
+
+        const { data } = await client.put(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}`,
+          {
+            title: pr.title,
+            description: pr.description || '',
+            reviewers: reviewers.map((username) => ({ user: { name: username } })),
+            version: pr.version,
+          }
+        )
+
+        const updatedReviewers = data.reviewers?.map((r: any) => r.user?.displayName || r.user?.name)
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Reviewers updated on PR #${prId}: ${updatedReviewers?.join(', ') || 'none'}`,
             },
           ],
         }

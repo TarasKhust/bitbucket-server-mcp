@@ -28,6 +28,13 @@ export const CreatePullRequestSchema = z.object({
     .describe('Array of reviewer usernames'),
 })
 
+export const UpdateReviewersSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  reviewers: z.array(z.string()).describe('Array of reviewer usernames'),
+})
+
 export const AddCommentSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
