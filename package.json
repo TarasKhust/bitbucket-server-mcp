@@ -1,6 +1,6 @@
 {
   "name": "@tarasrushchak/bitbucket-server-mcp",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MCP Server for Bitbucket Server/Data Center — PR management, repositories, code review",
   "type": "module",
   "bin": {
@@ -12,7 +12,13 @@
     "dev": "node --loader ts-node/esm src/server.ts",
     "start": "node dist/server.js"
   },
-  "keywords": ["mcp", "bitbucket", "bitbucket-server", "pull-request", "code-review"],
+  "keywords": [
+    "mcp",
+    "bitbucket",
+    "bitbucket-server",
+    "pull-request",
+    "code-review"
+  ],
   "author": "Taras Rushchak",
   "license": "MIT",
   "dependencies": {
