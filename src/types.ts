@@ -15,6 +15,16 @@ export const PullRequestSchema = z.object({
   prId: z.coerce.number().describe('Pull request ID'),
 })
 
+export const PullRequestDiffSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  filePath: z.string().optional().describe('Filter diff to a specific file path'),
+  start: z.coerce.number().optional().describe('Start index for file pagination (0-based). Defaults to 0'),
+  limit: z.coerce.number().optional().describe('Max number of files to return in diff. Defaults to 25'),
+  contextLines: z.coerce.number().optional().describe('Number of context lines around changes. Defaults to 5'),
+})
+
 export const CreatePullRequestSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),

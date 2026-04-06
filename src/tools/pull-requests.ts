@@ -3,6 +3,7 @@ import { getClient } from '../client.js'
 import {
   ListPullRequestsSchema,
   PullRequestSchema,
+  PullRequestDiffSchema,
   CreatePullRequestSchema,
   UpdateReviewersSchema,
 } from '../types.js'
@@ -25,6 +26,21 @@ function formatPR(pr: any) {
     updatedDate: pr.updatedDate ? new Date(pr.updatedDate).toISOString() : null,
     link: pr.links?.self?.[0]?.href,
   }
+}
+
+function formatDiff(d: any): string {
+  const hunks = d.hunks?.map((h: any) =>
+    h.segments
+      ?.map((s: any) =>
+        s.lines?.map((l: any) => {
+          const prefix = s.type === 'ADDED' ? '+' : s.type === 'REMOVED' ? '-' : ' '
+          return `${prefix} ${l.line}`
+        })
+      )
+      .flat()
+      .join('\n')
+  )
+  return `--- ${d.source?.toString || '/dev/null'}\n+++ ${d.destination?.toString || '/dev/null'}\n${hunks?.join('\n') || ''}`
 }
 
 export function registerPullRequestTools(server: McpServer) {
@@ -79,38 +95,43 @@ export function registerPullRequestTools(server: McpServer) {
 
   server.tool(
     'get_pull_request_diff',
-    'Get the diff/changes of a pull request',
-    PullRequestSchema.shape,
-    async ({ projectKey, repoSlug, prId }) => {
+    'Get the diff/changes of a pull request. Supports pagination via start/limit and filtering by filePath. Returns file list summary with total count.',
+    PullRequestDiffSchema.shape,
+    async ({ projectKey, repoSlug, prId, filePath, start, limit, contextLines }) => {
       try {
         const client = getClient()
+        const pageStart = start ?? 0
+        const pageLimit = limit ?? 25
+        const ctx = contextLines ?? 5
+
+        if (filePath) {
+          const { data } = await client.get(
+            `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/diff/${filePath}`,
+            { params: { contextLines: ctx } }
+          )
+
+          const diffs = data.diffs?.map(formatDiff) ?? []
+          return {
+            content: [{ type: 'text' as const, text: diffs.join('\n\n') || 'No changes' }],
+          }
+        }
+
         const { data } = await client.get(
           `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/diff`,
-          { params: { contextLines: 5 } }
+          { params: { contextLines: ctx } }
         )
 
-        const diffs = data.diffs?.map((d: any) => {
-          const path =
-            d.destination?.toString || d.source?.toString || 'unknown'
-          const hunks = d.hunks?.map((h: any) =>
-            h.segments
-              ?.map((s: any) =>
-                s.lines?.map((l: any) => {
-                  const prefix =
-                    s.type === 'ADDED' ? '+' : s.type === 'REMOVED' ? '-' : ' '
-                  return `${prefix} ${l.line}`
-                })
-              )
-              .flat()
-              .join('\n')
-          )
-          return `--- ${d.source?.toString || '/dev/null'}\n+++ ${d.destination?.toString || '/dev/null'}\n${hunks?.join('\n') || ''}`
-        })
+        const allDiffs: any[] = data.diffs ?? []
+        const total = allDiffs.length
+        const paginated = allDiffs.slice(pageStart, pageStart + pageLimit)
+        const diffs = paginated.map(formatDiff)
+
+        const fileList = allDiffs.map((d: any) => d.destination?.toString || d.source?.toString || 'unknown')
+
+        const header = `Files changed: ${total} | Showing: ${pageStart}–${Math.min(pageStart + pageLimit, total) - 1}\nAll files:\n${fileList.map((f: string, i: number) => `  ${i}. ${f}`).join('\n')}\n\n`
 
         return {
-          content: [
-            { type: 'text' as const, text: diffs?.join('\n\n') || 'No changes' },
-          ],
+          content: [{ type: 'text' as const, text: header + (diffs.join('\n\n') || 'No changes') }],
         }
       } catch (error: any) {
         const msg = error.response?.data?.errors?.[0]?.message || error.message
