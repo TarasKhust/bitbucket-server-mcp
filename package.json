@@ -1,6 +1,6 @@
 {
   "name": "@tarasrushchak/bitbucket-server-mcp",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "MCP Server for Bitbucket Server/Data Center — PR management, repositories, code review",
   "type": "module",
   "bin": {
@@ -22,10 +22,10 @@
   "author": "Taras Rushchak",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.28.0",
     "axios": "^1.8.0",
     "dotenv": "^16.4.7",
-    "zod": "^3.24.2"
+    "zod": "^3.25.0"
   },
   "devDependencies": {
     "@types/node": "^22.15.3",
