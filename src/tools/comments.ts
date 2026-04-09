@@ -74,12 +74,14 @@ export function registerCommentTools(server: McpServer) {
     'add_comment',
     'Add a general comment to a pull request',
     AddCommentSchema.shape,
-    async ({ projectKey, repoSlug, prId, text }) => {
+    async ({ projectKey, repoSlug, prId, text, parentId }) => {
       try {
         const client = getClient()
+        const body: Record<string, unknown> = { text }
+        if (parentId) body.parent = { id: parentId }
         const { data } = await client.post(
           `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments`,
-          { text }
+          body
         )
 
         return {

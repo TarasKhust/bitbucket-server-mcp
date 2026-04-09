@@ -50,6 +50,7 @@ export const AddCommentSchema = z.object({
   repoSlug: z.string().describe('Repository slug'),
   prId: z.coerce.number().describe('Pull request ID'),
   text: z.string().describe('Comment text (supports markdown)'),
+  parentId: z.coerce.number().optional().describe('Parent comment ID to reply to (creates a threaded reply)'),
 })
 
 export const DeleteCommentSchema = z.object({
