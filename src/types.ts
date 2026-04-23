@@ -36,6 +36,14 @@ export const CreatePullRequestSchema = z.object({
     .array(z.string())
     .optional()
     .describe('Array of reviewer usernames'),
+  draft: z.boolean().optional().describe('Create as draft/WIP pull request. Defaults to false'),
+})
+
+export const ConvertToDraftSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  draft: z.boolean().optional().describe('true = convert to draft, false = mark as ready for review. Defaults to true'),
 })
 
 export const UpdateReviewersSchema = z.object({

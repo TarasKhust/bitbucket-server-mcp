@@ -6,6 +6,7 @@ import {
   PullRequestDiffSchema,
   CreatePullRequestSchema,
   UpdateReviewersSchema,
+  ConvertToDraftSchema,
 } from '../types.js'
 
 function formatPR(pr: any) {
@@ -144,12 +145,13 @@ export function registerPullRequestTools(server: McpServer) {
     'create_pull_request',
     'Create a new pull request',
     CreatePullRequestSchema.shape,
-    async ({ projectKey, repoSlug, title, description, fromBranch, toBranch, reviewers }) => {
+    async ({ projectKey, repoSlug, title, description, fromBranch, toBranch, reviewers, draft }) => {
       try {
         const client = getClient()
         const body: any = {
           title,
           description: description || '',
+          draft: draft ?? false,
           fromRef: { id: `refs/heads/${fromBranch}`, repository: { slug: repoSlug, project: { key: projectKey } } },
           toRef: { id: `refs/heads/${toBranch}`, repository: { slug: repoSlug, project: { key: projectKey } } },
         }
@@ -259,6 +261,43 @@ export function registerPullRequestTools(server: McpServer) {
 
         return {
           content: [{ type: 'text' as const, text: `Pull request #${prId} approved.` }],
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.errors?.[0]?.message || error.message
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }] }
+      }
+    }
+  )
+
+  server.tool(
+    'convert_to_draft',
+    'Convert a pull request to draft (WIP) or mark it as ready for review',
+    ConvertToDraftSchema.shape,
+    async ({ projectKey, repoSlug, prId, draft }) => {
+      try {
+        const client = getClient()
+        const prResp = await client.get(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}`
+        )
+        const pr = prResp.data
+        const isDraft = draft ?? true
+
+        const { data } = await client.put(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}`,
+          {
+            title: pr.title,
+            description: pr.description || '',
+            draft: isDraft,
+            reviewers: pr.reviewers?.map((r: any) => ({ user: { name: r.user?.name } })) ?? [],
+            version: pr.version,
+          }
+        )
+
+        const status = isDraft ? 'draft' : 'ready for review'
+        return {
+          content: [
+            { type: 'text' as const, text: `PR #${data.id} marked as ${status}: ${data.links?.self?.[0]?.href}` },
+          ],
         }
       } catch (error: any) {
         const msg = error.response?.data?.errors?.[0]?.message || error.message
