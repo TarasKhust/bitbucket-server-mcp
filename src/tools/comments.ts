@@ -2,6 +2,30 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getClient } from '../client.js'
 import { PullRequestSchema, AddCommentSchema, AddInlineCommentSchema, DeleteCommentSchema } from '../types.js'
 
+export function formatPullRequestComment(comment: any, parentId?: number): Record<string, unknown> {
+  return {
+    id: comment?.id,
+    parentId: parentId ?? comment?.parent?.id ?? null,
+    author: comment?.author?.displayName || comment?.author?.name,
+    text: comment?.text,
+    createdDate: comment?.createdDate ? new Date(comment.createdDate).toISOString() : null,
+    updatedDate: comment?.updatedDate ? new Date(comment.updatedDate).toISOString() : null,
+    threadResolved: comment?.threadResolved ?? null,
+    state: comment?.state ?? null,
+    anchor: comment?.anchor
+      ? {
+          path: comment.anchor.path,
+          line: comment.anchor.line,
+          lineType: comment.anchor.lineType,
+          orphaned: comment.anchor.orphaned,
+        }
+      : null,
+    replies: (comment?.comments ?? []).map((reply: any) =>
+      formatPullRequestComment(reply, comment?.id)
+    ),
+  }
+}
+
 export function registerCommentTools(server: McpServer) {
   server.tool(
     'get_pull_request_comments',
@@ -17,21 +41,7 @@ export function registerCommentTools(server: McpServer) {
 
         const activities = data.values
           ?.filter((a: any) => a.action === 'COMMENTED')
-          .map((a: any) => ({
-            id: a.comment?.id,
-            author: a.comment?.author?.displayName || a.comment?.author?.name,
-            text: a.comment?.text,
-            createdDate: a.comment?.createdDate
-              ? new Date(a.comment.createdDate).toISOString()
-              : null,
-            anchor: a.comment?.anchor
-              ? {
-                  path: a.comment.anchor.path,
-                  line: a.comment.anchor.line,
-                  lineType: a.comment.anchor.lineType,
-                }
-              : null,
-          }))
+          .map((a: any) => formatPullRequestComment(a.comment))
 
         return {
           content: [{ type: 'text' as const, text: JSON.stringify(activities || [], null, 2) }],
