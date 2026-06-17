@@ -60,6 +60,7 @@ claude mcp add bitbucket-server -e BITBUCKET_URL=https://your-bitbucket.com -e B
 | `add_comment` | Add a general comment to a PR |
 | `add_inline_comment` | Add an inline comment on a specific file/line |
 | `get_pull_request_comments` | Get all comments on a PR, including threaded replies |
+| `resolve_comment` | Resolve or reopen a PR comment thread |
 
 ### Repositories
 | Tool | Description |

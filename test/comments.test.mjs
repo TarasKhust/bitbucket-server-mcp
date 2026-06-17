@@ -1,7 +1,19 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { formatPullRequestComment } from '../dist/tools/comments.js'
+import { buildResolveCommentBody, formatPullRequestComment } from '../dist/tools/comments.js'
+
+test('buildResolveCommentBody sets threadResolved with the current version', () => {
+  assert.deepEqual(buildResolveCommentBody({ version: 7 }), {
+    version: 7,
+    threadResolved: true,
+  })
+
+  assert.deepEqual(buildResolveCommentBody({ version: 7 }, false, 8), {
+    version: 8,
+    threadResolved: false,
+  })
+})
 
 test('formatPullRequestComment includes nested replies', () => {
   const formatted = formatPullRequestComment({

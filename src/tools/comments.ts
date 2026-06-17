@@ -1,6 +1,28 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { getClient } from '../client.js'
-import { PullRequestSchema, AddCommentSchema, AddInlineCommentSchema, DeleteCommentSchema } from '../types.js'
+import {
+  PullRequestSchema,
+  AddCommentSchema,
+  AddInlineCommentSchema,
+  DeleteCommentSchema,
+  ResolveCommentSchema,
+} from '../types.js'
+
+export function buildResolveCommentBody(
+  comment: { version?: number | null },
+  resolved = true,
+  version?: number
+): Record<string, unknown> {
+  const currentVersion = version ?? comment.version
+  if (currentVersion === undefined || currentVersion === null) {
+    throw new Error('Comment version is required to resolve a comment thread')
+  }
+
+  return {
+    version: currentVersion,
+    threadResolved: resolved,
+  }
+}
 
 export function formatPullRequestComment(comment: any, parentId?: number): Record<string, unknown> {
   return {
@@ -70,6 +92,38 @@ export function registerCommentTools(server: McpServer) {
             {
               type: 'text' as const,
               text: `Comment #${commentId} deleted from PR #${prId}`,
+            },
+          ],
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.errors?.[0]?.message || error.message
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }] }
+      }
+    }
+  )
+
+  server.tool(
+    'resolve_comment',
+    'Resolve or reopen a pull request comment thread',
+    ResolveCommentSchema.shape,
+    async ({ projectKey, repoSlug, prId, commentId, resolved, version }) => {
+      try {
+        const client = getClient()
+        const url = `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments/${commentId}`
+        const comment =
+          version === undefined
+            ? (await client.get(url)).data
+            : { version }
+
+        const isResolved = resolved ?? true
+        const { data } = await client.put(url, buildResolveCommentBody(comment, isResolved, version))
+
+        const status = data.threadResolved ? 'resolved' : 'reopened'
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Comment thread #${commentId} ${status} on PR #${prId}`,
             },
           ],
         }

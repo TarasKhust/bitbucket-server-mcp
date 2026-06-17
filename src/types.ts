@@ -69,6 +69,15 @@ export const DeleteCommentSchema = z.object({
   version: z.coerce.number().optional().describe('Comment version for concurrency check. Defaults to -1'),
 })
 
+export const ResolveCommentSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  commentId: z.coerce.number().describe('Comment ID whose thread should be resolved'),
+  resolved: z.boolean().optional().describe('true = resolve the comment thread, false = reopen it. Defaults to true'),
+  version: z.coerce.number().optional().describe('Comment version for concurrency check. If omitted, the tool fetches the current version first'),
+})
+
 export const AddInlineCommentSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
