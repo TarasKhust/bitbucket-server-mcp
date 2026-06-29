@@ -4,6 +4,7 @@ import {
   PullRequestSchema,
   AddCommentSchema,
   AddInlineCommentSchema,
+  AddSuggestedChangeSchema,
   DeleteCommentSchema,
   ResolveCommentSchema,
 } from '../types.js'
@@ -22,6 +23,22 @@ export function buildResolveCommentBody(
     version: currentVersion,
     threadResolved: resolved,
   }
+}
+
+export function buildSuggestedChangeText(suggestedCode: string, text?: string): string {
+  const normalizedSuggestion = suggestedCode
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n$/, '')
+
+  if (normalizedSuggestion.includes('```')) {
+    throw new Error('Suggested code cannot contain triple backticks')
+  }
+
+  const commentText = text?.trim()
+  const prefix = commentText ? `${commentText}\n\n` : ''
+
+  return `${prefix}\`\`\`suggestion\n${normalizedSuggestion}\n\`\`\``
 }
 
 export function formatPullRequestComment(comment: any, parentId?: number): Record<string, unknown> {
@@ -188,6 +205,41 @@ export function registerCommentTools(server: McpServer) {
             {
               type: 'text' as const,
               text: `Inline comment #${data.id} added on ${filePath}:${line} in PR #${prId}`,
+            },
+          ],
+        }
+      } catch (error: any) {
+        const msg = error.response?.data?.errors?.[0]?.message || error.message
+        return { content: [{ type: 'text' as const, text: `Error: ${msg}` }] }
+      }
+    }
+  )
+
+  server.tool(
+    'add_suggested_change',
+    'Add an inline Bitbucket suggested change comment with an Apply suggestion action',
+    AddSuggestedChangeSchema.shape,
+    async ({ projectKey, repoSlug, prId, filePath, line, suggestedCode, text, lineType }) => {
+      try {
+        const client = getClient()
+        const { data } = await client.post(
+          `/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments`,
+          {
+            text: buildSuggestedChangeText(suggestedCode, text),
+            anchor: {
+              path: filePath,
+              line,
+              lineType: lineType || 'ADDED',
+              fileType: 'TO',
+            },
+          }
+        )
+
+        return {
+          content: [
+            {
+              type: 'text' as const,
+              text: `Suggested change #${data.id} added on ${filePath}:${line} in PR #${prId}`,
             },
           ],
         }

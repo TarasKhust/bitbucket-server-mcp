@@ -2,3 +2,4 @@ src
 tsconfig.json
 .gitignore
 .env
+AGENTS.md

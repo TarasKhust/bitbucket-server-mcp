@@ -1,7 +1,11 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
 
-import { buildResolveCommentBody, formatPullRequestComment } from '../dist/tools/comments.js'
+import {
+  buildResolveCommentBody,
+  buildSuggestedChangeText,
+  formatPullRequestComment,
+} from '../dist/tools/comments.js'
 
 test('buildResolveCommentBody sets threadResolved with the current version', () => {
   assert.deepEqual(buildResolveCommentBody({ version: 7 }), {
@@ -13,6 +17,29 @@ test('buildResolveCommentBody sets threadResolved with the current version', () 
     version: 8,
     threadResolved: false,
   })
+})
+
+test('buildSuggestedChangeText wraps replacement code in a suggestion block', () => {
+  assert.equal(
+    buildSuggestedChangeText(
+      "const data = await apiRequest('GET', '/components/')",
+      'Suggested simplification:'
+    ),
+    [
+      'Suggested simplification:',
+      '',
+      '```suggestion',
+      "const data = await apiRequest('GET', '/components/')",
+      '```',
+    ].join('\n')
+  )
+})
+
+test('buildSuggestedChangeText rejects nested code fences', () => {
+  assert.throws(
+    () => buildSuggestedChangeText('```ts\nconst value = true\n```'),
+    /triple backticks/
+  )
 })
 
 test('formatPullRequestComment includes nested replies', () => {

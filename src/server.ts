@@ -17,7 +17,7 @@ if (!config) {
 
 const server = new McpServer({
   name: 'bitbucket-server-mcp',
-  version: '1.4.0',
+  version: '1.4.1',
 })
 
 // Register all tool groups

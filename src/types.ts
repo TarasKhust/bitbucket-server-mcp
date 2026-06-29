@@ -91,6 +91,20 @@ export const AddInlineCommentSchema = z.object({
     .describe('Type of line (ADDED, REMOVED, or CONTEXT). Defaults to ADDED'),
 })
 
+export const AddSuggestedChangeSchema = z.object({
+  projectKey: z.string().describe('Bitbucket project key'),
+  repoSlug: z.string().describe('Repository slug'),
+  prId: z.coerce.number().describe('Pull request ID'),
+  filePath: z.string().describe('Path to the file to comment on'),
+  line: z.coerce.number().describe('Line number to anchor the suggestion on'),
+  suggestedCode: z.string().min(1).describe('Replacement code for the suggested change'),
+  text: z.string().optional().describe('Optional comment text before the suggestion block'),
+  lineType: z
+    .enum(['ADDED', 'REMOVED', 'CONTEXT'])
+    .optional()
+    .describe('Type of line (ADDED, REMOVED, or CONTEXT). Defaults to ADDED'),
+})
+
 export const ListPullRequestsSchema = z.object({
   projectKey: z.string().describe('Bitbucket project key'),
   repoSlug: z.string().describe('Repository slug'),
